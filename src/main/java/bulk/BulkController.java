@@ -16,12 +16,12 @@ public class BulkController {
     /**
      * Contract base URI for resource of application specific roles.
      */
-    public static final String CONTRACT_BASE_URI = "/api/v1/cds/app-roles";
+    public static final String CONTRACT_BASE_URI = "/{tenant}/api/v1/cds/app-roles";
 
     @Autowired
     BulkRuleManager bulkRuleManager;
 
-    @PostMapping(value = "bulk",
+    @PostMapping(value = "_bulk",
             consumes = "application/json",
             headers = "Accept=application/vnd.intapp+json;version=1",
             produces = MediaType.APPLICATION_JSON_VALUE)

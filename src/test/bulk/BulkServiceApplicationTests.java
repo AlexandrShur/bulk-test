@@ -28,41 +28,63 @@ public class BulkServiceApplicationTests {
     private TestRestTemplate testRestTemplate;
 
     @Test
-    public void testDoubleRule() {
+    public void doubleRules_forNoUniqueRules_FailedRules() {
+
+        // Arrange
+        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 1;
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
+
+        // Act
+        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+
+        // Assert
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println(entity.getBody().getFailedRules());
         then( entity.getBody().getFailedRules()).isEqualTo(failedRuleCount);
     }
 
     @Test
-    public void testFailedRule() {
+    public void failedRule_forRulesDidntPassValidation_FailedRules() {
+
+        // Arrange
+        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 2;
         rules.add(new Rule(0, "NomeName", "Some desciption", "Name"));
         rules.add(new Rule(0, "GomeName", "Some desciption", "same"));
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
-        System.out.println(entity.getBody());
+
+        // Act
+        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+
+        // Assert
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
         then( entity.getBody().getFailedRules()).isEqualTo(failedRuleCount);
     }
 
     @Test
-    public void testAllAcceptedRule() {
+    public void acceptedRules_AllCorrectRules_FailedRules() {
+
+        // Arrange
+        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
         List<Rule> rules = new ArrayList<>();
         int acceptedRuleCount = 1;
         rules.add(new Rule(0, "AccName", "Some desciption", "Acc"));
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
+
+        // Act
+        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+
+        // Assert
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
         then( entity.getBody().getAcceptedRules()).isEqualTo(acceptedRuleCount);
     }
 
     @Test
-    public void testLargeRequestRule() {
+    public void largeRequestRule_RulesToValidate_HttpStatusOk() {
+
+        // Arrange
+        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
         List<Rule> rules = new ArrayList<>();
         int nameRand;
         int appRand;
@@ -72,7 +94,11 @@ public class BulkServiceApplicationTests {
             appRand = (int)(Math.random() * 3 + 1);
             rules.add(new Rule(0, nameRand + "AccName", "Some description", appRand + "Acc"));
         }
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
+
+        // Act
+        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+
+        // Assert
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }
