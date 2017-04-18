@@ -26,8 +26,7 @@ public class AppRolesResource {
             consumes = "application/json",
             headers = "Accept=application/vnd.intapp+json;version=1",
             produces = MediaType.APPLICATION_JSON_VALUE )
-    public BulkResponse bulkRolesUpload(@PathVariable String tenant, @RequestBody  List<Rule> rules) throws IOException {
-        System.out.println("bulkRolesUpload1.");
-        return bulkRuleManager.validateRules(rules);
+    public BulkResponse bulkRulesUpload(@PathVariable String tenant, @RequestBody  List<Rule> rules) throws IOException {
+        return bulkRuleManager.validateAndSaveRules(rules);
     }
 }

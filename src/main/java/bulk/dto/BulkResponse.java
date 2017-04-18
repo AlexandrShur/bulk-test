@@ -11,5 +11,5 @@ import java.util.List;
 public class BulkResponse {
     int acceptedRules;
     int failedRules;
-    List<PairIdRule> failedRulesList = new ArrayList<>();
+    List<RuleInfo> rules = new ArrayList<>();
 }

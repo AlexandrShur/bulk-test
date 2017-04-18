@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,8 +30,9 @@ import java.util.List;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class BulkServiceApplicationTests {
 
+
     @Autowired
-    private TestRestTemplate testRestTemplate;
+    Database database;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -43,6 +46,7 @@ public class BulkServiceApplicationTests {
     public void setUp() throws Exception {
         mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .build();
+        database.resetDatabase();
     }
 
     @After
@@ -59,17 +63,24 @@ public class BulkServiceApplicationTests {
         int acceptedRuleCount = 1;
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
-
-        // Act
-        ResultActions resultActions = mvc.perform(post(urlTemplate)
+        MockHttpServletRequestBuilder msb = post(urlTemplate)
                 .content(toJsonString(rules))
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
+                .accept(MediaType.APPLICATION_JSON);
+
+        // Act
+        ResultActions resultActions = mvc.perform(msb);
+
+        System.out.println("reponse: " + resultActions.andReturn().getResponse().getContentAsString());
 
         // Assert
         resultActions.andExpect(status().isOk())
                 .andExpect(jsonPath("$.failedRules", is(failedRuleCount)))
-                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)));
+                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)))
+                .andExpect(jsonPath("$.rules.[0].rule.id", is(1)))
+                .andExpect(jsonPath("$.rules.[0].status", is("Accepted")))
+                .andExpect(jsonPath("$.rules.[1].rule.id", is(0)))
+                .andExpect(jsonPath("$.rules.[1].status", is("Failed")));
     }
 
     @Test
@@ -79,18 +90,26 @@ public class BulkServiceApplicationTests {
         String urlTemplate = CONTRACT_BASE_URI_WILCO;
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 2;
-        rules.add(new Rule(0, "NomeName", "Some desciption", "Name"));
-        rules.add(new Rule(0, "GomeName", "Some desciption", "same"));
-
-        // Act
-        ResultActions resultActions = mvc.perform(post(urlTemplate)
+        rules.add(new Rule(0, "NomeName", "Some desciption", ""));
+        rules.add(new Rule(0, "", "Some desciption", "same"));
+        MockHttpServletRequestBuilder msb = post(urlTemplate)
                 .content(toJsonString(rules))
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
+                .accept(MediaType.APPLICATION_JSON);
+
+        // Act
+        ResultActions resultActions = mvc.perform(msb);
+
+        System.out.println("reponse: " + resultActions.andReturn().getResponse().getContentAsString());
 
         // Assert
         resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)));
+                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)))
+                .andExpect(jsonPath("$.rules.[0].rule.id", is(0)))
+                .andExpect(jsonPath("$.rules.[0].status", is("Failed")))
+                .andExpect(jsonPath("$.rules.[1].rule.id", is(0)))
+                .andExpect(jsonPath("$.rules.[1].status", is("Failed")));
+
     }
 
     @Test
@@ -101,16 +120,19 @@ public class BulkServiceApplicationTests {
         List<Rule> rules = new ArrayList<>();
         int acceptedRuleCount = 1;
         rules.add(new Rule(0, "AccName", "Some desciption", "Acc"));
-
-        // Act
-        ResultActions resultActions = mvc.perform(post(urlTemplate)
+        MockHttpServletRequestBuilder msb = post(urlTemplate)
                 .content(toJsonString(rules))
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
+                .accept(MediaType.APPLICATION_JSON);
+
+        // Act
+        ResultActions resultActions = mvc.perform(msb);
 
         // Assert
         resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)));
+                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)))
+                .andExpect(jsonPath("$.rules.[0].rule.id", is(1)))
+                .andExpect(jsonPath("$.rules.[0].status", is("Accepted")));
     }
 
     @Test
@@ -127,12 +149,13 @@ public class BulkServiceApplicationTests {
             appRand = (int)(Math.random() * 3 + 1);
             rules.add(new Rule(0, nameRand + "AccName", "Some description", appRand + "Acc"));
         }
-
-        // Act
-        ResultActions resultActions = mvc.perform(post(urlTemplate)
+        MockHttpServletRequestBuilder msb = post(urlTemplate)
                 .content(toJsonString(rules))
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
+                .accept(MediaType.APPLICATION_JSON);
+
+        // Act
+        ResultActions resultActions = mvc.perform(msb);
 
         // Assert
         resultActions.andExpect(status().isOk());

@@ -1,7 +1,8 @@
 package bulk;
 
 import bulk.dto.BulkResponse;
-import bulk.dto.PairIdRule;
+import bulk.dto.OperationStat;
+import bulk.dto.RuleInfo;
 import bulk.dto.Rule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,42 +16,47 @@ public class BulkRuleManager {
     Database database;
 
     /**
-     * Validate rules list.
+     * Validate and save rules list.
+     * 
      * @param rules list of rules to validate.
      * @return validation response.
      */
-    public  BulkResponse validateRules(List<Rule> rules) {
+    public  BulkResponse validateAndSaveRules(List<Rule> rules) {
         BulkResponse bulkResponse = new BulkResponse();
         int iter = 0;
         for (Rule rule : rules) {
-            if(checkRuleAppPrefix(rule) && database.addRule(rule)) {
-                incrementAccptedRule(bulkResponse);
+            OperationStat operationStat = addRuleAppPrefix(rule);
+            if (operationStat.isStatus()){
+                operationStat = database.addRule(rule);
+                if(operationStat.isStatus()) {
+                    incrementAccptedRule(bulkResponse);
+                } else {
+                    removeRuleAppPrefix(rule);
+                    incrementFailedRule(bulkResponse);
+                }
             } else {
                 incrementFailedRule(bulkResponse);
-                bulkResponse.getFailedRulesList().add(new PairIdRule(iter, rule));
             }
+            String status = operationStat.isStatus() ? "Accepted" : "Failed";
+            bulkResponse.getRules().add(new RuleInfo(iter, status, operationStat.getMessage(), rule));
             iter++;
         }
         return bulkResponse;
     }
 
     /**
-     * Check rule name prefix.
+     * Add app prefix to rule name.
      *
      * @param rule rule to check.
-     * @return <code>true</code> if name contains application prefix.
      */
-    private  boolean checkRuleAppPrefix(Rule rule) {
-        String app = rule.getApplication();
-        String name = rule.getName();
-        if (app != null && app.length() > 0) {
-            if (name != null && name.length() >= app.length()) {
-                if (app.equals(name.substring(0, app.length()))) {
-                    return true;
-                }
-            }
+    private OperationStat addRuleAppPrefix(Rule rule) {
+        if (rule.getName() == null || rule.getName().isEmpty()) {
+            return new OperationStat(false, "Rule name is empty!");
+        } else if (rule.getApplication() == null || rule.getApplication().isEmpty()) {
+            return new OperationStat(false, "Rule application is empty!");
         }
-        return false;
+        rule.setName(rule.getApplication() + "-" + rule.getName());
+        return new OperationStat(true, "Rule prefix add successfully.");
     }
 
     /**
@@ -69,5 +75,14 @@ public class BulkRuleManager {
      */
     private void incrementFailedRule(BulkResponse bulkResponse){
         bulkResponse.setFailedRules(bulkResponse.getFailedRules() + 1);
+    }
+
+    /**
+     * Remove rule app prefix.
+     *
+     * @param rule rule to remove prefix from.
+     */
+    private void removeRuleAppPrefix(Rule rule){
+        rule.setName(rule.getName().replaceFirst(rule.getApplication() + "-", ""));
     }
 }
