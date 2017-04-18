@@ -10,8 +10,9 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping(BulkController.CONTRACT_BASE_URI)
-public class BulkController {
+@RequestMapping(AppRolesResource.CONTRACT_BASE_URI)
+
+public class AppRolesResource {
 
     /**
      * Contract base URI for resource of application specific roles.
@@ -24,9 +25,9 @@ public class BulkController {
     @PostMapping(value = "_bulk",
             consumes = "application/json",
             headers = "Accept=application/vnd.intapp+json;version=1",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public BulkResponse bulkRolesUpload(@RequestBody  List<Rule> rules) throws IOException {
+            produces = MediaType.APPLICATION_JSON_VALUE )
+    public BulkResponse bulkRolesUpload(@PathVariable String tenant, @RequestBody  List<Rule> rules) throws IOException {
+        System.out.println("bulkRolesUpload1.");
         return bulkRuleManager.validateRules(rules);
     }
 }

@@ -1,6 +1,5 @@
 package bulk.dto;
 
-import bulk.PairIdRule;
 import lombok.Getter;
 import lombok.Setter;
 

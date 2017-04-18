@@ -1,90 +1,123 @@
 package bulk;
 
-import bulk.dto.BulkResponse;
 import bulk.dto.Rule;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.assertj.core.api.BDDAssertions.then;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class BulkServiceApplicationTests {
 
-    @LocalServerPort
-    private int port;
-
     @Autowired
     private TestRestTemplate testRestTemplate;
 
+    @Autowired
+    private WebApplicationContext webApplicationContext;
+
+    private MockMvc mvc;
+
+    public static final String CONTRACT_BASE_URI_WILCO = AppRolesResource.CONTRACT_BASE_URI.replace("{tenant}", "Wilco") + "/_bulk";
+
+
+    @Before
+    public void setUp() throws Exception {
+        mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .build();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+    }
+
     @Test
-    public void doubleRules_forNoUniqueRules_FailedRules() {
+    public void doubleRules_forNoUniqueRules_FailedRules() throws Exception {
 
         // Arrange
-        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
+        String urlTemplate =  CONTRACT_BASE_URI_WILCO;
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 1;
+        int acceptedRuleCount = 1;
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
 
         // Act
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+        ResultActions resultActions = mvc.perform(post(urlTemplate)
+                .content(toJsonString(rules))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
 
         // Assert
-        then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        then( entity.getBody().getFailedRules()).isEqualTo(failedRuleCount);
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)))
+                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)));
     }
 
     @Test
-    public void failedRule_forRulesDidntPassValidation_FailedRules() {
+    public void failedRule_forRulesDidntPassValidation_FailedRules() throws Exception {
 
         // Arrange
-        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
+        String urlTemplate = CONTRACT_BASE_URI_WILCO;
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 2;
         rules.add(new Rule(0, "NomeName", "Some desciption", "Name"));
         rules.add(new Rule(0, "GomeName", "Some desciption", "same"));
 
         // Act
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+        ResultActions resultActions = mvc.perform(post(urlTemplate)
+                .content(toJsonString(rules))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
 
         // Assert
-        then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        then( entity.getBody().getFailedRules()).isEqualTo(failedRuleCount);
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)));
     }
 
     @Test
-    public void acceptedRules_AllCorrectRules_FailedRules() {
+    public void acceptedRules_AllCorrectRules_FailedRules() throws Exception {
 
         // Arrange
-        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
+        String urlTemplate = CONTRACT_BASE_URI_WILCO;
         List<Rule> rules = new ArrayList<>();
         int acceptedRuleCount = 1;
         rules.add(new Rule(0, "AccName", "Some desciption", "Acc"));
 
         // Act
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+        ResultActions resultActions = mvc.perform(post(urlTemplate)
+                .content(toJsonString(rules))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
 
         // Assert
-        then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        then( entity.getBody().getAcceptedRules()).isEqualTo(acceptedRuleCount);
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)));
     }
 
     @Test
-    public void largeRequestRule_RulesToValidate_HttpStatusOk() {
+    public void largeRequestRule_RulesToValidate_HttpStatusOk() throws Exception {
 
         // Arrange
-        String url =  "http://localhost:" + this.port + "/some_app/api/v1/cds/app-roles/_bulk";
+        String urlTemplate =  CONTRACT_BASE_URI_WILCO;
         List<Rule> rules = new ArrayList<>();
         int nameRand;
         int appRand;
@@ -96,9 +129,28 @@ public class BulkServiceApplicationTests {
         }
 
         // Act
-        ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity(url, rules, BulkResponse.class);
+        ResultActions resultActions = mvc.perform(post(urlTemplate)
+                .content(toJsonString(rules))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON));
 
         // Assert
-        then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        resultActions.andExpect(status().isOk());
+    }
+
+    /**
+     * Convert {@link Object} type to JSON {@link String}.
+     *
+     * @param object object to convert.
+     * @return JSON {@link String}
+     */
+    public static String toJsonString(final Object object) {
+        try {
+            final ObjectMapper objectMapper = new ObjectMapper();
+            final String json = objectMapper.writeValueAsString(object);
+            return json;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

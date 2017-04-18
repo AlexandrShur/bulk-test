@@ -1,4 +1,4 @@
-package bulk;
+package bulk.dto;
 
 import bulk.dto.Rule;
 import lombok.AllArgsConstructor;

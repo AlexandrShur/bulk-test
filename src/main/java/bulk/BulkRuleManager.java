@@ -1,6 +1,7 @@
 package bulk;
 
 import bulk.dto.BulkResponse;
+import bulk.dto.PairIdRule;
 import bulk.dto.Rule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
