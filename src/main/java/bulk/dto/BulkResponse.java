@@ -1,5 +1,6 @@
-package bulk;
+package bulk.dto;
 
+import bulk.PairIdRule;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,12 +13,4 @@ public class BulkResponse {
     int acceptedRules;
     int failedRules;
     List<PairIdRule> failedRulesList = new ArrayList<>();
-
-    public void addAcceptedRule(){
-        acceptedRules++;
-    }
-
-    public void addFailedRule(){
-        failedRules++;
-    }
 }

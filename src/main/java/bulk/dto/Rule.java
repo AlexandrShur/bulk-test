@@ -1,4 +1,4 @@
-package bulk;
+package bulk.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

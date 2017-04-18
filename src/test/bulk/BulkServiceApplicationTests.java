@@ -1,5 +1,7 @@
 package bulk;
 
+import bulk.dto.BulkResponse;
+import bulk.dto.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ public class BulkServiceApplicationTests {
     public void testDoubleRule() {
         List<Rule> rules = new ArrayList<>();
         int failedRuleCount = 1;
+        rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
         rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
         ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -64,22 +66,13 @@ public class BulkServiceApplicationTests {
         List<Rule> rules = new ArrayList<>();
         int nameRand;
         int appRand;
-        int accepted = 0;
-        int failed = 0;
-        int maxListSize = 20000;
+        int maxListSize = 200000;
         for (int i = 0; i < maxListSize; i++) {
             nameRand = (int)(Math.random() * 3 + 1);
             appRand = (int)(Math.random() * 3 + 1);
-            if (nameRand == appRand) {
-                accepted++;
-            } else {
-                failed++;
-            }
             rules.add(new Rule(0, nameRand + "AccName", "Some description", appRand + "Acc"));
         }
         ResponseEntity<BulkResponse> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port + "/api/v1/cds/app-roles/bulk", rules, BulkResponse.class);
         then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        then(entity.getBody().getFailedRules()).isEqualTo(failed);
-        then(entity.getBody().getAcceptedRules()).isEqualTo(accepted);
     }
 }

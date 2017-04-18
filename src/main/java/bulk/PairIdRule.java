@@ -1,5 +1,6 @@
 package bulk;
 
+import bulk.dto.Rule;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,29 +1,34 @@
 package bulk;
 
-import java.util.ArrayList;
+import bulk.dto.BulkResponse;
+import bulk.dto.Rule;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 
+@Service
 public class BulkRuleManager {
 
-    public static BulkResponse validateRules(List<Rule> rules) {
+    @Autowired
+    Database database;
+
+    public  BulkResponse validateRules(List<Rule> rules) {
         BulkResponse bulkResponse = new BulkResponse();
-        List<PairIdRule> rulesToAdd = new ArrayList<>();
         int iter = 0;
         for (Rule rule : rules) {
-            if(checkRuleAppPrefix(rule)) {
-                bulkResponse.addAcceptedRule();
-                rulesToAdd.add(new PairIdRule(iter, rule));
+            if(checkRuleAppPrefix(rule) && database.addRule(rule)) {
+                incrementAccpetedRule(bulkResponse);
             } else {
-                bulkResponse.addFailedRule();
+                incrementFailedRule(bulkResponse);
                 bulkResponse.getFailedRulesList().add(new PairIdRule(iter, rule));
             }
             iter++;
         }
-        fillBulkResponseWithDBResponse(bulkResponse, databaseResponse(rulesToAdd));
         return bulkResponse;
     }
 
-    private static boolean checkRuleAppPrefix(Rule rule) {
+    private  boolean checkRuleAppPrefix(Rule rule) {
         String app = rule.getApplication();
         String name = rule.getName();
         if (app != null && app.length() > 0) {
@@ -36,16 +41,11 @@ public class BulkRuleManager {
         return false;
     }
 
-    private static List<PairIdRule> databaseResponse(List<PairIdRule> rulesToAdd){
-        Database database = new Database();
-        List<PairIdRule> dbResponse = new ArrayList<>();
-        return database.addRulesToDB(rulesToAdd);
+    private void incrementAccpetedRule(BulkResponse bulkResponse){
+        bulkResponse.setAcceptedRules(bulkResponse.getAcceptedRules() + 1);
     }
 
-    private static void fillBulkResponseWithDBResponse(BulkResponse bulkResponse, List<PairIdRule> dbResponse){
-        for (PairIdRule pair : dbResponse) {
-            bulkResponse.addFailedRule();
-            bulkResponse.getFailedRulesList().add(pair);
-        }
+    private void incrementFailedRule(BulkResponse bulkResponse){
+        bulkResponse.setFailedRules(bulkResponse.getFailedRules() + 1);
     }
 }
