@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Rule {
+public class Role {
     private int id;
     private String name;
     private String description;

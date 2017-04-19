@@ -9,7 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 public class BulkResponse {
-    int acceptedRules;
-    int failedRules;
-    List<RuleInfo> rules = new ArrayList<>();
+    List<RoleInfo> rejectedRoles = new ArrayList<>();
+    List<Role> acceptedRoles = new ArrayList<>();
 }

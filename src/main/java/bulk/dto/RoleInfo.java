@@ -9,9 +9,9 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RuleInfo {
+public class RoleInfo {
     private int position;
     private String status;
     private String message;
-    private Rule rule;
+    private Role role;
 }

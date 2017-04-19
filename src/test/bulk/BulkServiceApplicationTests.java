@@ -1,6 +1,6 @@
 package bulk;
 
-import bulk.dto.Rule;
+import bulk.dto.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
@@ -8,19 +8,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.hasSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,17 +53,17 @@ public class BulkServiceApplicationTests {
     }
 
     @Test
-    public void doubleRules_forNoUniqueRules_FailedRules() throws Exception {
+    public void doubleRoles_forNoUniqueRoles_FailedRoles() throws Exception {
 
         // Arrange
         String urlTemplate =  CONTRACT_BASE_URI_WILCO;
-        List<Rule> rules = new ArrayList<>();
-        int failedRuleCount = 1;
-        int acceptedRuleCount = 1;
-        rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
-        rules.add(new Rule(0, "SomeName", "Some desciption", "Some"));
+        List<Role> roles = new ArrayList<>();
+        int failedRoleCount = 1;
+        int acceptedRoleCount = 1;
+        roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(toJsonString(rules))
+                .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
@@ -75,25 +74,24 @@ public class BulkServiceApplicationTests {
 
         // Assert
         resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)))
-                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)))
-                .andExpect(jsonPath("$.rules.[0].rule.id", is(1)))
-                .andExpect(jsonPath("$.rules.[0].status", is("Accepted")))
-                .andExpect(jsonPath("$.rules.[1].rule.id", is(0)))
-                .andExpect(jsonPath("$.rules.[1].status", is("Failed")));
+                .andExpect(jsonPath("$.rejectedRoles", hasSize(failedRoleCount)))
+                .andExpect(jsonPath("$.acceptedRoles", hasSize(acceptedRoleCount)))
+                .andExpect(jsonPath("$.acceptedRoles.[0].id", is(1)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].role.id", is(0)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].status", is("Failed")));
     }
 
     @Test
-    public void failedRule_forRulesDidntPassValidation_FailedRules() throws Exception {
+    public void failedRole_forRolesDidntPassValidation_FailedRoles() throws Exception {
 
         // Arrange
         String urlTemplate = CONTRACT_BASE_URI_WILCO;
-        List<Rule> rules = new ArrayList<>();
-        int failedRuleCount = 2;
-        rules.add(new Rule(0, "NomeName", "Some desciption", ""));
-        rules.add(new Rule(0, "", "Some desciption", "same"));
+        List<Role> roles = new ArrayList<>();
+        int failedRoleCount = 2;
+        roles.add(new Role(0, "NomeName", "Some desciption", ""));
+        roles.add(new Role(0, "", "Some desciption", "same"));
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(toJsonString(rules))
+                .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
@@ -104,24 +102,24 @@ public class BulkServiceApplicationTests {
 
         // Assert
         resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.failedRules", is(failedRuleCount)))
-                .andExpect(jsonPath("$.rules.[0].rule.id", is(0)))
-                .andExpect(jsonPath("$.rules.[0].status", is("Failed")))
-                .andExpect(jsonPath("$.rules.[1].rule.id", is(0)))
-                .andExpect(jsonPath("$.rules.[1].status", is("Failed")));
+                .andExpect(jsonPath("$.rejectedRoles", hasSize(failedRoleCount)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].role.id", is(0)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].status", is("Failed")))
+                .andExpect(jsonPath("$.rejectedRoles.[1].role.id", is(0)))
+                .andExpect(jsonPath("$.rejectedRoles.[1].status", is("Failed")));
 
     }
 
     @Test
-    public void acceptedRules_AllCorrectRules_FailedRules() throws Exception {
+    public void acceptedRoles_AllCorrectRoles_FailedRoles() throws Exception {
 
         // Arrange
         String urlTemplate = CONTRACT_BASE_URI_WILCO;
-        List<Rule> rules = new ArrayList<>();
-        int acceptedRuleCount = 1;
-        rules.add(new Rule(0, "AccName", "Some desciption", "Acc"));
+        List<Role> roles = new ArrayList<>();
+        int acceptedRoleCount = 1;
+        roles.add(new Role(0, "AccName", "Some desciption", "Acc"));
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(toJsonString(rules))
+                .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
@@ -130,27 +128,26 @@ public class BulkServiceApplicationTests {
 
         // Assert
         resultActions.andExpect(status().isOk())
-                .andExpect(jsonPath("$.acceptedRules", is(acceptedRuleCount)))
-                .andExpect(jsonPath("$.rules.[0].rule.id", is(1)))
-                .andExpect(jsonPath("$.rules.[0].status", is("Accepted")));
+                .andExpect(jsonPath("$.acceptedRoles", hasSize(acceptedRoleCount)))
+                .andExpect(jsonPath("$.acceptedRoles.[0].id", is(1)));
     }
 
     @Test
-    public void largeRequestRule_RulesToValidate_HttpStatusOk() throws Exception {
+    public void largeRequestRole_RolesToValidate_HttpStatusOk() throws Exception {
 
         // Arrange
         String urlTemplate =  CONTRACT_BASE_URI_WILCO;
-        List<Rule> rules = new ArrayList<>();
+        List<Role> roles = new ArrayList<>();
         int nameRand;
         int appRand;
         int maxListSize = 200000;
         for (int i = 0; i < maxListSize; i++) {
             nameRand = (int)(Math.random() * 3 + 1);
             appRand = (int)(Math.random() * 3 + 1);
-            rules.add(new Rule(0, nameRand + "AccName", "Some description", appRand + "Acc"));
+            roles.add(new Role(0, nameRand + "AccName", "Some description", appRand + "Acc"));
         }
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(toJsonString(rules))
+                .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
