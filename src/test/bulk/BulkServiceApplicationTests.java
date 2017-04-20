@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
 
 
 @RunWith(SpringRunner.class)
@@ -62,10 +63,11 @@ public class BulkServiceApplicationTests {
         int acceptedRoleCount = 1;
         roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
         roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        ZipEntry entry = new ZipEntry(toJsonString(roles));
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(toJsonString(roles))
+                .content(entry.toString())
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Accept-Encoding", "gzip")
+                .header("Content-Encoding", "gzip")
                 .accept(MediaType.APPLICATION_JSON);
 
         // Act
