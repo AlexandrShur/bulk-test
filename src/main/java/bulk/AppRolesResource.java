@@ -24,7 +24,7 @@ public class AppRolesResource {
 
     @PostMapping(value = "_bulk",
             consumes = "application/json",
-            headers = "Accept=application/vnd.intapp+json;version=1",
+            headers = "Accept=application/vnd.intapp+json;version=1;Content-Encoding=gzip",
             produces = MediaType.APPLICATION_JSON_VALUE )
     public BulkResponse bulkRolesUpload(@PathVariable String tenant, @RequestBody  List<Role> roles) throws IOException {
         return bulkRuleManager.validateAndSaveRoles(roles);

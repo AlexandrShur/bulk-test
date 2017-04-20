@@ -53,6 +53,37 @@ public class BulkServiceApplicationTests {
     }
 
     @Test
+    public void gzipCompression_CompressedRequest_Compresssedresponse() throws Exception {
+
+        // Arrange
+        String urlTemplate =  CONTRACT_BASE_URI_WILCO;
+        List<Role> roles = new ArrayList<>();
+        int failedRoleCount = 1;
+        int acceptedRoleCount = 1;
+        roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        MockHttpServletRequestBuilder msb = post(urlTemplate)
+                .content(toJsonString(roles))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Accept-Encoding", "gzip")
+                .accept(MediaType.APPLICATION_JSON);
+
+        // Act
+        ResultActions resultActions = mvc.perform(msb);
+
+        for (String name : resultActions.andReturn().getResponse().getHeaderNames()) {
+            System.out.println("reponsegzip: " + name);
+        }
+        // Assert
+        resultActions.andExpect(status().isOk())
+                .andExpect(jsonPath("$.rejectedRoles", hasSize(failedRoleCount)))
+                .andExpect(jsonPath("$.acceptedRoles", hasSize(acceptedRoleCount)))
+                .andExpect(jsonPath("$.acceptedRoles.[0].id", is(1)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].role.id", is(0)))
+                .andExpect(jsonPath("$.rejectedRoles.[0].status", is("Failed")));
+    }
+
+    @Test
     public void doubleRoles_forNoUniqueRoles_FailedRoles() throws Exception {
 
         // Arrange
