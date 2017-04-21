@@ -37,11 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasSize;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 
@@ -190,12 +186,13 @@ public class BulkServiceApplicationTests {
     public void testCompression() throws Exception {
 
         // Arrange
-        String json = "[{\"name\":\"name\",\"description\": \"descitption\",\"application\": \"application\"}]";
-        byte[] jsonb = compress(json.getBytes());
+        List<Role> roles = new ArrayList<>();
+        roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        byte[] compressed = compress(toJsonString(roles));
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON.toString());
         requestHeaders.set("Content-Encoding", "gzip");
-        HttpEntity<?> requestEntity = new HttpEntity<>(jsonb, requestHeaders);
+        HttpEntity<?> requestEntity = new HttpEntity<>(compressed, requestHeaders);
 
         // Act
         ResponseEntity<BulkResponse> entity = this.restTemplate.exchange("http://localhost:" + port+CONTRACT_BASE_URI_WILCO, HttpMethod.POST,
@@ -228,13 +225,13 @@ public class BulkServiceApplicationTests {
      * @param source source to compress.
      * @return compressed byte array.
      */
-    private byte[] compress(byte[] source) throws IOException {
-        if (source == null || source.length == 0) {
-            return source;
+    private byte[] compress(String source) throws IOException {
+        if (source == null || source.isEmpty() ) {
+            return null;
         }
 
-        ByteArrayInputStream sourceStream = new ByteArrayInputStream(source);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(source.length / 2);
+        ByteArrayInputStream sourceStream = new ByteArrayInputStream(source.getBytes());
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(source.length());
         OutputStream compressor = new GZIPOutputStream(outputStream);
 
         try {
@@ -242,7 +239,8 @@ public class BulkServiceApplicationTests {
         } finally {
             compressor.close();
         }
-
-        return outputStream.toByteArray();
+        byte[] compressed = outputStream.toByteArray();
+        outputStream.close();
+        return compressed;
     }
 }
