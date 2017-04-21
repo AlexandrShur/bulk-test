@@ -165,7 +165,6 @@ public class BulkServiceApplicationTests {
 
         // Arrange
         List<Role> roles = generateRoles(20000);
-        //roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
         byte[] compressed = compress(toJsonString(roles));
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON.toString());
@@ -186,7 +185,6 @@ public class BulkServiceApplicationTests {
 
         // Arrange
         List<Role> roles = generateRoles(20000);
-        //roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON.toString());
         requestHeaders.set("Accept-Encoding", "gzip");
@@ -219,7 +217,6 @@ public class BulkServiceApplicationTests {
         }
     }
 
-
     /**
      * Compress source.
      *
@@ -244,7 +241,6 @@ public class BulkServiceApplicationTests {
         outputStream.close();
         return compressed;
     }
-
 
     /**
      * Decompress source.
