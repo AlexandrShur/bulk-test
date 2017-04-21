@@ -3,9 +3,7 @@ package bulk;
 import bulk.dto.BulkResponse;
 import bulk.dto.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.google.common.io.ByteStreams;
 import com.google.common.io.ByteStreams;
-import org.apache.tomcat.util.ExceptionUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,20 +13,13 @@ import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.WebApplicationContext;
-
-import javax.servlet.*;
-import javax.servlet.descriptor.JspConfigDescriptor;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,18 +28,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasSize;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(locations="classpath:test.properties")
 public class BulkServiceApplicationTests {
 
     @Autowired
@@ -88,17 +76,13 @@ public class BulkServiceApplicationTests {
         int acceptedRoleCount = 1;
         roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
         roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
-        ZipEntry entry = new ZipEntry(toJsonString(roles));
         MockHttpServletRequestBuilder msb = post(urlTemplate)
-                .content(entry.toString())
+                .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Content-Encoding", "gzip")
                 .accept(MediaType.APPLICATION_JSON);
 
         // Act
         ResultActions resultActions = mvc.perform(msb);
-
-        System.out.println("reponse: " + resultActions.andReturn().getResponse().getContentAsString());
 
         // Assert
         resultActions.andExpect(status().isOk())
@@ -125,8 +109,6 @@ public class BulkServiceApplicationTests {
 
         // Act
         ResultActions resultActions = mvc.perform(msb);
-
-        System.out.println("reponse: " + resultActions.andReturn().getResponse().getContentAsString());
 
         // Assert
         resultActions.andExpect(status().isOk())
@@ -165,15 +147,7 @@ public class BulkServiceApplicationTests {
 
         // Arrange
         String urlTemplate =  CONTRACT_BASE_URI_WILCO;
-        List<Role> roles = new ArrayList<>();
-        int nameRand;
-        int appRand;
-        int maxListSize = 200000;
-        for (int i = 0; i < maxListSize; i++) {
-            nameRand = (int)(Math.random() * 3 + 1);
-            appRand = (int)(Math.random() * 3 + 1);
-            roles.add(new Role(0, nameRand + "AccName", "Some description", appRand + "Acc"));
-        }
+        List<Role> roles = generateRoles(200000);
         MockHttpServletRequestBuilder msb = post(urlTemplate)
                 .content(toJsonString(roles))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -190,12 +164,13 @@ public class BulkServiceApplicationTests {
     public void testCompression() throws Exception {
 
         // Arrange
-        String json = "[{\"name\":\"name\",\"description\": \"descitption\",\"application\": \"application\"}]";
-        byte[] jsonb = compress(json.getBytes());
+        List<Role> roles = generateRoles(20000);
+        //roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        byte[] compressed = compress(toJsonString(roles));
         HttpHeaders requestHeaders = new HttpHeaders();
         requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON.toString());
         requestHeaders.set("Content-Encoding", "gzip");
-        HttpEntity<?> requestEntity = new HttpEntity<>(jsonb, requestHeaders);
+        HttpEntity<?> requestEntity = new HttpEntity<>(compressed, requestHeaders);
 
         // Act
         ResponseEntity<BulkResponse> entity = this.restTemplate.exchange("http://localhost:" + port+CONTRACT_BASE_URI_WILCO, HttpMethod.POST,
@@ -204,6 +179,28 @@ public class BulkServiceApplicationTests {
         // Assert
         assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entity.getBody().getAcceptedRoles().size() == 1);
+    }
+
+    @Test
+    public void testDecompression() throws Exception {
+
+        // Arrange
+        List<Role> roles = generateRoles(20000);
+        //roles.add(new Role(0, "SomeName", "Some desciption", "Some"));
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set("Content-Type", MediaType.APPLICATION_JSON.toString());
+        requestHeaders.set("Accept-Encoding", "gzip");
+        HttpEntity<?> requestEntity = new HttpEntity<>(toJsonString(roles), requestHeaders);
+
+        // Act
+        ResponseEntity<byte[]> entity = this.restTemplate.exchange("http://localhost:" + port+CONTRACT_BASE_URI_WILCO, HttpMethod.POST,
+                requestEntity, byte[].class);
+
+        // Assert
+        assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String decompressedResponse = deCompress(entity.getBody());
+        System.out.println(decompressedResponse);
+        assertThat(decompressedResponse.contains("acceptedRoles")).isEqualTo(true);
     }
 
     /**
@@ -222,19 +219,20 @@ public class BulkServiceApplicationTests {
         }
     }
 
+
     /**
      * Compress source.
      *
      * @param source source to compress.
      * @return compressed byte array.
      */
-    private byte[] compress(byte[] source) throws IOException {
-        if (source == null || source.length == 0) {
-            return source;
+    private byte[] compress(String source) throws IOException {
+        if (source == null || source.isEmpty()) {
+            return null;
         }
 
-        ByteArrayInputStream sourceStream = new ByteArrayInputStream(source);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(source.length / 2);
+        ByteArrayInputStream sourceStream = new ByteArrayInputStream(source.getBytes());
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(source.length() / 2);
         OutputStream compressor = new GZIPOutputStream(outputStream);
 
         try {
@@ -242,7 +240,53 @@ public class BulkServiceApplicationTests {
         } finally {
             compressor.close();
         }
+        byte[] compressed = outputStream.toByteArray();
+        outputStream.close();
+        return compressed;
+    }
 
-        return outputStream.toByteArray();
+
+    /**
+     * Decompress source.
+     *
+     * @param source source to decompress.
+     * @return decompressed response.
+     */
+    private String deCompress(byte[] source) throws IOException {
+        String deCompressedResponse = new String();
+        if (source == null || source.length == 0) {
+            return deCompressedResponse;
+        }
+
+        ByteArrayInputStream sourceStream = new ByteArrayInputStream(source);
+        InputStream deCompressor = new GZIPInputStream(sourceStream);
+        InputStreamReader reader = new InputStreamReader(deCompressor);
+        BufferedReader in = new BufferedReader(reader);
+
+        String readed;
+        while ((readed = in.readLine()) != null) {
+            deCompressedResponse += readed;
+            System.out.println(deCompressedResponse);
+        }
+        deCompressor.close();
+        return deCompressedResponse;
+    }
+
+    /**
+     * Generate roles.
+     *
+     * @param listSize size of role list to return.
+     * @return generated role list.
+     */
+    private List<Role> generateRoles(int listSize) {
+        List<Role> roles = new ArrayList<>();
+        int nameRand;
+        int appRand;
+        for (int i = 0; i < listSize; i++) {
+            nameRand = (int)(Math.random() * 3 + 1);
+            appRand = (int)(Math.random() * 3 + 1);
+            roles.add(new Role(0, nameRand + "AccName", "Some description", appRand + "Acc"));
+        }
+        return roles;
     }
 }
