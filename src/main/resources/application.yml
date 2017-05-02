@@ -1,7 +1,25 @@
+
+
+# Thymeleaf
 spring:
   application:
     name: bulk
+  thymeleaf:
+    cache: false
+
+# Hibernate
+hibernate:
+  dialect: org.hibernate.dialect.MySQL5Dialect
+  show_sql: true
+  hbm2ddl:
+    auto: update
+entitymanager:
+  packagesToScan: bulk.model
+
+
+
 server:
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
